@@ -21,13 +21,24 @@ const SupportForm = () => {
         try {
             const response = await fetch(API_URL, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": "*"
+                },
                 body: JSON.stringify(formData),
             });
 
-            if (!response.ok) throw new Error("Error en la solicitud de soporte");
+            console.log('Response status:', response.status);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Error response:', errorText);
+                throw new Error("Error en la solicitud de soporte");
+            }
 
             const result = await response.json();
+            console.log('Result:', result);
+
             setResponseMessage(
                 `¡Gracias, ${formData.name}! Hemos recibido tu solicitud de soporte. Te contactaremos pronto al correo ${formData.email}.`
             );
