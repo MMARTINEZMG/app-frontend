@@ -11,6 +11,7 @@ import {
   Legend,
   ArcElement,
 } from "chart.js";
+import { useNavigate } from "react-router-dom"; // Para manejar la redirección
 
 ChartJS.register(
   CategoryScale,
@@ -27,31 +28,40 @@ const Dashboard = () => {
   const [data, setData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1); // Estado para la página actual
-  const [itemsPerPage, setItemsPerPage] = useState(10); // Estado para el número de elementos por página
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await axios.get(API_URL);
-        setData(response.data);
-        setFilteredData(response.data);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    const token = localStorage.getItem("authToken");
 
-    fetchData();
-  }, []);
+    if (!token) {
+      navigate("/");
+    } else {
+      const fetchData = async () => {
+        try {
+          const response = await axios.get(API_URL, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          setData(response.data);
+          setFilteredData(response.data);
+        } catch (error) {
+          console.error("Error fetching data:", error);
+        } finally {
+          setLoading(false);
+        }
+      };
 
-  // Calcular los elementos que deben ser mostrados en la página actual
+      fetchData();
+    }
+  }, [navigate]);
+
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filteredData.slice(indexOfFirstItem, indexOfLastItem);
 
-  // Función para manejar el cambio de página
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   const tableHeaders = [
@@ -93,30 +103,33 @@ const Dashboard = () => {
   };
 
   const handleChartClick = (priorityLevel) => {
-    console.log(data);
     const filtered = data.filter(
       (item) => item.priorityLevel === priorityLevel
     );
     setFilteredData(filtered);
   };
 
-  // Calcular el número total de páginas
   const pageNumbers = [];
   for (let i = 1; i <= Math.ceil(filteredData.length / itemsPerPage); i++) {
     pageNumbers.push(i);
   }
+
+  const handleLogout = () => {
+    localStorage.removeItem("authToken");
+    navigate("/");
+  };
 
   return (
     <div className="min-h-screen bg-[#1a1b1f] text-white">
       <nav className="bg-[#15171a] text-white p-4 shadow-lg">
         <div className="container mx-auto flex justify-between items-center">
           <div className="text-xl font-bold">Dashboard</div>
-          <a
-            href="/login"
+          <button
+            onClick={handleLogout}
             className="bg-black text-white py-2 px-4 rounded hover:bg-gray-800"
           >
             Logout
-          </a>
+          </button>
         </div>
       </nav>
 
@@ -163,7 +176,6 @@ const Dashboard = () => {
               </table>
             </div>
 
-            {/* Paginación */}
             <div className="mt-4 text-center">
               <nav>
                 <ul className="inline-flex space-x-2">

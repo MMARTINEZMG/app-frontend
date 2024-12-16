@@ -22,7 +22,8 @@ const LoginPage = () => {
       });
 
       if (response.status === 200) {
-        console.log("Login successful:", response.data);
+        localStorage.setItem("authToken", response.data.token);
+
         setIsConfettiActive(true);
 
         setTimeout(() => {
@@ -30,7 +31,6 @@ const LoginPage = () => {
         }, 1000);
       }
     } catch (err) {
-      console.error("Login error:", err);
       setError("Invalid email or password. Please try again.");
     } finally {
       setLoading(false);
