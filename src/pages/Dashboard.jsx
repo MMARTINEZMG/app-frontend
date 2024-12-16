@@ -27,6 +27,8 @@ const Dashboard = () => {
   const [data, setData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1); // Estado para la página actual
+  const [itemsPerPage, setItemsPerPage] = useState(10); // Estado para el número de elementos por página
 
   useEffect(() => {
     const fetchData = async () => {
@@ -43,6 +45,14 @@ const Dashboard = () => {
 
     fetchData();
   }, []);
+
+  // Calcular los elementos que deben ser mostrados en la página actual
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredData.slice(indexOfFirstItem, indexOfLastItem);
+
+  // Función para manejar el cambio de página
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   const tableHeaders = [
     "ID",
@@ -83,11 +93,18 @@ const Dashboard = () => {
   };
 
   const handleChartClick = (priorityLevel) => {
+    console.log(data);
     const filtered = data.filter(
       (item) => item.priorityLevel === priorityLevel
     );
     setFilteredData(filtered);
   };
+
+  // Calcular el número total de páginas
+  const pageNumbers = [];
+  for (let i = 1; i <= Math.ceil(filteredData.length / itemsPerPage); i++) {
+    pageNumbers.push(i);
+  }
 
   return (
     <div className="min-h-screen bg-[#1a1b1f] text-white">
@@ -126,7 +143,7 @@ const Dashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredData.map((item) => (
+                  {currentItems.map((item) => (
                     <tr
                       key={item.id}
                       className="hover:bg-[#1a1b1f] border-b border-gray-700"
@@ -144,6 +161,28 @@ const Dashboard = () => {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Paginación */}
+            <div className="mt-4 text-center">
+              <nav>
+                <ul className="inline-flex space-x-2">
+                  {pageNumbers.map((number) => (
+                    <li key={number}>
+                      <button
+                        onClick={() => paginate(number)}
+                        className={`px-4 py-2 rounded-md ${
+                          currentPage === number
+                            ? "bg-[#A8FF53] text-black"
+                            : "bg-[#212327] text-white"
+                        }`}
+                      >
+                        {number}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
             </div>
 
             <div className="mt-10">
