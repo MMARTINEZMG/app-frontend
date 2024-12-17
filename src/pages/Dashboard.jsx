@@ -33,6 +33,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    console.log("PRUEBA");
     const token = localStorage.getItem("authToken");
 
     if (!token) {
