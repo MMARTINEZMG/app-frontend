@@ -11,7 +11,8 @@ import {
   Legend,
   ArcElement,
 } from "chart.js";
-import { useNavigate } from "react-router-dom"; // Para manejar la redirección
+import { useNavigate } from "react-router-dom";
+import DetailsPopup from "../components/DetailsPopup";
 
 ChartJS.register(
   CategoryScale,
@@ -29,11 +30,12 @@ const Dashboard = () => {
   const [filteredData, setFilteredData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    console.log("PRUEBA");
     const token = localStorage.getItem("authToken");
 
     if (!token) {
@@ -65,6 +67,16 @@ const Dashboard = () => {
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
+  const handleRowClick = (item) => {
+    setSelectedItem(item);
+    setIsPopupOpen(true);
+  };
+
+  const handleClosePopup = () => {
+    setIsPopupOpen(false);
+    setSelectedItem(null);
+  };
+
   const tableHeaders = [
     "ID",
     "Name",
@@ -72,19 +84,20 @@ const Dashboard = () => {
     "Phone",
     "Priority Level",
     "Description",
+    "Type",
     "Created At",
   ];
 
   const barChartData = {
-    labels: ["Low", "Medium", "High"],
+    labels: ["Technical", "Billing", "Account"],
     datasets: [
       {
-        label: "Priority Levels Count",
-        data: ["Low", "Medium", "High"].map(
-          (level) => data.filter((item) => item.priorityLevel === level).length
+        label: "Request Types Count",
+        data: ["technical", "billing", "account"].map(
+          (type) => data.filter((item) => item.type === type).length
         ),
-        backgroundColor: ["#FF6384", "#36A2EB", "#FFCE56"],
-        borderColor: ["#D7D9DD", "#D7D9DD", "#D7D9DD"],
+        backgroundColor: ["#4CAF50", "#2196F3", "#FF9800"],
+        borderColor: ["#E0E0E0", "#E0E0E0", "#E0E0E0"],
       },
     ],
   };
@@ -93,20 +106,18 @@ const Dashboard = () => {
     labels: ["Low", "Medium", "High"],
     datasets: [
       {
-        data: ["Low", "Medium", "High"].map(
+        data: ["low", "medium", "high"].map(
           (level) => data.filter((item) => item.priorityLevel === level).length
         ),
-        backgroundColor: ["#FF6384", "#36A2EB", "#FFCE56"],
-        borderColor: ["#d1d5db", "#d1d5db", "#d1d5db"],
+        backgroundColor: ["#4CAF50", "#2196F3", "#F44336"],
+        borderColor: ["#E0E0E0", "#E0E0E0", "#E0E0E0"],
         borderWidth: 2,
       },
     ],
   };
 
-  const handleChartClick = (priorityLevel) => {
-    const filtered = data.filter(
-      (item) => item.priorityLevel === priorityLevel
-    );
+  const handleChartClick = (filter, value) => {
+    const filtered = data.filter((item) => item[filter] === value);
     setFilteredData(filtered);
   };
 
@@ -119,6 +130,19 @@ const Dashboard = () => {
     localStorage.removeItem("authToken");
     navigate("/");
   };
+
+  const truncateText = (text, length = 50) => {
+    return text.length > length ? `${text.substring(0, length)}...` : text;
+  };
+
+  const highPriorityCount = data.filter(
+    (item) => item.priorityLevel === "high"
+  ).length;
+  const latestCase = data.reduce((latest, current) => {
+    return new Date(current.createdAt) > new Date(latest.createdAt)
+      ? current
+      : latest;
+  }, data[0] || {});
 
   return (
     <div className="min-h-screen bg-[#1a1b1f] text-white">
@@ -136,16 +160,37 @@ const Dashboard = () => {
 
       <main className="p-10">
         <h1 className="text-3xl font-bold mb-4 text-center">
-          Welcome to your Dashboard!
+          Support Request Dashboard
         </h1>
         {loading ? (
           <p className="text-center text-lg text-gray-300">Loading...</p>
         ) : (
           <>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+              <div className="bg-[#2a2b30] p-6 rounded-lg shadow-md">
+                <h2 className="text-lg font-semibold">High Priority Cases</h2>
+                <p className="text-2xl font-bold mt-2 text-[#F44336]">
+                  {highPriorityCount}
+                </p>
+              </div>
+              <div className="bg-[#2a2b30] p-6 rounded-lg shadow-md">
+                <h2 className="text-lg font-semibold">Latest Case</h2>
+                <p className="text-md mt-2">
+                  {latestCase.name || "N/A"} - {latestCase.type || "N/A"}
+                </p>
+              </div>
+              <div className="bg-[#2a2b30] p-6 rounded-lg shadow-md">
+                <h2 className="text-lg font-semibold">Total Cases</h2>
+                <p className="text-2xl font-bold mt-2 text-[#4CAF50]">
+                  {data.length}
+                </p>
+              </div>
+            </div>
+
             <div className="overflow-x-auto bg-[#15171a] p-4 rounded-lg shadow-md">
               <table className="table-auto w-full text-left text-white">
                 <thead>
-                  <tr className="bg-[#A8FF53] text-black">
+                  <tr className="bg-[#4CAF50] text-black">
                     {tableHeaders.map((header) => (
                       <th
                         key={header}
@@ -161,13 +206,17 @@ const Dashboard = () => {
                     <tr
                       key={item.id}
                       className="hover:bg-[#1a1b1f] border-b border-gray-700"
+                      onClick={() => handleRowClick(item)}
                     >
                       <td className="px-4 py-2">{item.id}</td>
                       <td className="px-4 py-2">{item.name}</td>
                       <td className="px-4 py-2">{item.email}</td>
                       <td className="px-4 py-2">{item.phone}</td>
                       <td className="px-4 py-2">{item.priorityLevel}</td>
-                      <td className="px-4 py-2">{item.description}</td>
+                      <td className="px-4 py-2">
+                        {truncateText(item.description, 50)}
+                      </td>
+                      <td className="px-4 py-2">{item.type}</td>
                       <td className="px-4 py-2">
                         {new Date(item.createdAt).toLocaleString()}
                       </td>
@@ -185,9 +234,7 @@ const Dashboard = () => {
                       <button
                         onClick={() => paginate(number)}
                         className={`px-4 py-2 rounded-md ${
-                          currentPage === number
-                            ? "bg-[#A8FF53] text-black"
-                            : "bg-[#212327] text-white"
+                          currentPage === number ? "bg-[#4CAF50]" : ""
                         }`}
                       >
                         {number}
@@ -198,41 +245,89 @@ const Dashboard = () => {
               </nav>
             </div>
 
-            <div className="mt-10">
-              <h2 className="text-2xl font-bold text-center mb-4">
-                Priority Level Distribution
-              </h2>
-              <div className="flex flex-col lg:flex-row gap-8 justify-center items-center">
-                <div className="w-full lg:w-1/2 border-b border-gray-700">
+            <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div
+                className="bg-[#15171a] p-4 rounded-lg shadow-md flex flex-col justify-between"
+                style={{ height: "250px" }}
+              >
+                <h2 className="text-lg font-semibold mb-4 text-center">
+                  Request Types Distribution
+                </h2>
+                <div style={{ flexGrow: 1 }}>
                   <Bar
-                    className="border-b border-gray-500"
                     data={barChartData}
                     options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
                       onClick: (_, elements) => {
                         if (elements.length > 0) {
+                          const datasetIndex = elements[0].datasetIndex;
                           const index = elements[0].index;
-                          handleChartClick(barChartData.labels[index]);
+                          const type = barChartData.labels[index];
+                          handleChartClick("type", type.toLowerCase());
                         }
                       },
+                      plugins: {
+                        legend: {
+                          labels: {
+                            color: "white",
+                          },
+                        },
+                      },
+                      scales: {
+                        x: {
+                          ticks: { color: "white" },
+                        },
+                        y: {
+                          ticks: { color: "white" },
+                        },
+                      },
                     }}
+                    height={0}
                   />
                 </div>
-                <div className="w-full lg:w-1/2">
+              </div>
+
+              <div
+                className="bg-[#15171a] p-4 rounded-lg shadow-md flex flex-col justify-between"
+                style={{ height: "250px" }}
+              >
+                <h2 className="text-lg font-semibold mb-4 text-center">
+                  Priority Levels Distribution
+                </h2>
+                <div style={{ flexGrow: 1 }}>
                   <Pie
                     data={pieChartData}
                     options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
                       onClick: (_, elements) => {
                         if (elements.length > 0) {
                           const index = elements[0].index;
-                          handleChartClick(pieChartData.labels[index]);
+                          const level = pieChartData.labels[index];
+                          handleChartClick(
+                            "priorityLevel",
+                            level.toLowerCase()
+                          );
                         }
                       },
+                      plugins: {
+                        legend: {
+                          labels: {
+                            color: "white",
+                          },
+                        },
+                      },
                     }}
+                    height={0}
                   />
                 </div>
               </div>
             </div>
           </>
+        )}
+        {isPopupOpen && selectedItem && (
+          <DetailsPopup data={selectedItem} onClose={handleClosePopup} />
         )}
       </main>
     </div>
