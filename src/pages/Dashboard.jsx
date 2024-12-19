@@ -148,7 +148,9 @@ const Dashboard = () => {
     <div className="min-h-screen bg-[#1a1b1f] text-white">
       <nav className="bg-[#15171a] text-white p-4 shadow-lg">
         <div className="container mx-auto flex justify-between items-center">
-          <div className="text-xl font-bold">Dashboard</div>
+          <a href="#" className="text-xl font-bold text-[#90e048] pr-8">
+            TechLife Solutions
+          </a>
           <button
             onClick={handleLogout}
             className="bg-black text-white py-2 px-4 rounded hover:bg-gray-800"
